@@ -3,6 +3,7 @@
 const API_BASE = "/api";
 let appInitialized = false;
 let currentEventId = null;
+let currentPageData = null;
 let events = [];
 let pageStack = [];
 let currentPage = "events";
@@ -334,6 +335,7 @@ function showPage(page) {
     loadEvents();
     currentPage = "events";
   } else if (page === "admin-dashboard") {
+    currentPage = "admin-dashboard";
     if (authState.user && authState.user.role === "admin") {
       loadAdminDashboardEvents();
     } else {
@@ -371,6 +373,16 @@ function navigateBack() {
   const backBtn = document.getElementById("back-btn");
   if (backBtn)
     backBtn.style.display = pageStack.length > 0 ? "inline-block" : "none";
+  // If we've returned to the admin dashboard, refresh the events to ensure
+  // the cards are rendered (covers cases where the list may be stale).
+  if (prev === "admin-dashboard") {
+    try {
+      // loadAdminDashboardEvents may be async; call it and ignore errors
+      loadAdminDashboardEvents();
+    } catch (err) {
+      // ignore refresh errors
+    }
+  }
 }
 
 // ============ MODAL MANAGEMENT ============
@@ -541,6 +553,10 @@ async function openAnnouncementsPage(eventId) {
 window.addEventListener("page:data", (e) => {
   const { page, data } = e.detail || {};
   if (!page) return;
+  
+  // Store current page data for later use
+  currentPageData = data || null;
+  
   if (page === "event-details" && data?.eventId) {
     loadEventDetails(data.eventId);
   }
@@ -708,8 +724,16 @@ async function loadAdminQueriesPage(eventId) {
     });
     if (!resp.ok) throw new Error("Failed to load queries");
     const qs = await resp.json();
+    // Filter to show only unanswered queries (those without admin_reply)
+    const unansweredQueries = qs.filter((q) => !q.admin_reply);
     const list = document.getElementById("admin-queries-list");
-    list.innerHTML = qs
+    
+    if (unansweredQueries.length === 0) {
+      list.innerHTML = `<div class="empty-state"><p>No pending queries</p></div>`;
+      return;
+    }
+    
+    list.innerHTML = unansweredQueries
       .map(
         (q) => `
             <div class="query-card">
@@ -1061,6 +1085,31 @@ function setupEventForm() {
     }
 
     try {
+      // Client-side pre-check for overlapping events to prevent a POST when
+      // a conflict is detected. This mirrors server-side validation and
+      // gives faster feedback to the admin UI.
+      try {
+        const existingResp = await fetch(`${API_BASE}/events`, {
+          headers: getAuthHeaders(),
+        });
+        if (existingResp && existingResp.ok) {
+          const existing = await existingResp.json();
+          const newStart = new Date(eventDate + "T" + eventTime);
+          const newEnd = new Date(eventDate + "T" + addOneHour(eventTime));
+          const conflict = existing.some((ev) => {
+            const evStart = new Date((ev.start_date || ev.event_date) + "T" + (ev.start_time || ev.event_time));
+            const evEnd = new Date((ev.end_date || ev.event_date) + "T" + (ev.end_time || ev.event_time));
+            return newStart < evEnd && newEnd > evStart;
+          });
+          if (conflict) {
+            alert("Event time overlaps with an existing event. Please choose a different time.");
+            return;
+          }
+        }
+      } catch (innerErr) {
+        // If the pre-check fails (network/etc), fall back to server-side check
+        console.warn("Overlap pre-check failed:", innerErr);
+      }
       const response = await fetch(`${API_BASE}/events`, {
         method: "POST",
         headers: getAuthHeaders(),
@@ -1428,7 +1477,11 @@ async function submitQueryReply(e, queryId) {
     if (!response.ok) throw new Error("Failed to submit reply");
 
     alert("Reply submitted successfully");
-    await showEventQueries(currentEventId);
+    // Reload the admin queries page to reflect the reply
+    const eventId = currentPageData?.eventId || currentEventId;
+    if (eventId) {
+      await loadAdminQueriesPage(eventId);
+    }
   } catch (error) {
     alert("Error: " + error.message);
   }
