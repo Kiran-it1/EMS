@@ -492,3 +492,28 @@ events (1) ──┼──> registrations (many)
 **Last Updated**: November 2025
 **Version**: 1.0.0
 
+
+
+
+
+1] add eye icon inlogin and register to show password
+
+2] in event registration time format should be 12 hrs format with am and pm
+
+3]while event creation add dedline for registereing time and date. after that date and time, register button should be un available, and display with red color dedline closed
+
+4]for user or pasrticipant first in event card only event name has to be displayed, once the user cliciks on that card, then all content details has to be displayed and also registration button everything has to be displayed
+
+5] each event card should have announcements button once he clcik on that, new page should open, in that anouncements related to that event has to be shown. anouncements will be done by admin
+
+6]each event card should have querry button. once he clicks that new page should open, he should write his query and and click submit. it will be displayed in admin section
+
+7]in admin no need to show events page as he is not going to register for those events
+
+8]in admin section in event creation page dont display created events and its details button and all. that we will display in other page. ini creation page just creating form has to be displayed
+
+8] admin should have event dashboard page, in that page event cards should be present, once he clicks on one event card its all details has to be displayed and all buttons like view registration and delete event and edit details, if he clicks edit he can change any detail regarding that event
+
+9]admin event card also has anoiuncement button where he will type announcements and click anounce or submit this will be showed in users anouncement section users can only see anouncement they cannot reply in anouncements they will post in querries section
+
+10]admin event card also has querries button once he clicks that it should show queries card posted by users, in their queries section. once he click on querry card it will display name of the person posted that querry and he can reply their for that querry and that reply should be updated in user querries
