@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Event Manager</title>
+    <link rel="stylesheet" href="../../styles/tasks.css" />
+  </head>
+  <body>
+    <div class="todo-header">
+      <a href="./index.html"><h1>EVENT MANAGER</h1></a>
+    </div>
+    <div class="page-container">
+      <div class="title-header">TASKS</div>
+      <div class="contents-div">
+        <h1 class="event-name" id="event-name"></h1>
+        <div class="events-container">
+          <table id="tasks-table">
+            <tr>
+              <th><strong>Event Id</strong></th>
+              <th><strong>Task Name</strong></th>
+              <th><strong>Status</strong></th>
+            </tr>
+          </table>
+        </div>
+        <button class="confirm-button" onclick="confirmStatus()">
+          Confirm
+        </button>
+      </div>
+      <div class="warning-popup" id="warning-popup">
+        <div id="warning-msg"></div>
+      </div>
+    </div>
+    <script src="../../scripts/tasks.js"></script>
+  </body>
+</html>

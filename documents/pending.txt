@@ -1,0 +1,5 @@
+one the home page just the event title must be displayed and after clicking on it details must display 
+event time finished registration button should disaaper and display event started already 
+if time is over it should display time is over 
+user should be able to send his query to admin(query section)
+ 

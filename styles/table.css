@@ -1,0 +1,32 @@
+:root {
+  --primary-color: #03045e;
+  --secondary-color: #00b4d8;
+  --background-color: #ffffff;
+  --text-color: #0077b6;
+  --border-color: #90e0ef;
+  --highlight-color: #a2d2ff;
+  --bg-color: #f0f8ff;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px;
+}
+
+table th,
+table td {
+  padding: 12px;
+  text-align: left;
+  border-bottom: 1px solid var(--border-color);
+}
+
+table th {
+  background-color: var(--primary-color);
+  color: var(--highlight-color);
+  font-weight: bold;
+}
+
+table tr:hover {
+  background-color: var(--bg-color);
+}

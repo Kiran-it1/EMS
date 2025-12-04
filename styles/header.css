@@ -1,0 +1,39 @@
+:root {
+  --primary-color: #03045e;
+  --secondary-color: #00b4d8;
+  --background-color: #ffffff;
+  --text-color: #0077b6;
+  --border-color: #90e0ef;
+  --highlight-color: #a2d2ff;
+}
+
+.todo-header {
+  background-color: var(--primary-color);
+  color: var(--highlight-color);
+  padding: 20px;
+  text-align: center;
+}
+
+.todo-header h1 {
+  margin: 0;
+  font-size: 2rem;
+}
+
+.todo-header a {
+  color: var(--highlight-color);
+  text-decoration: none;
+}
+
+.page-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+  position: relative;
+}
+
+.title-header {
+  font-size: 1.5rem;
+  font-weight: bold;
+  margin-bottom: 20px;
+  color: var(--text-color);
+}
