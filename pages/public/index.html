@@ -1,204 +1,457 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Event Management System</title>
-    <link rel="stylesheet" href="/style.css">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-</head>
-<body>
+    <link rel="stylesheet" href="/style.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <!-- Auth Overlay -->
     <div id="auth-overlay" class="auth-overlay active">
-        <div class="auth-card">
-            <div class="auth-card-header">
-                <h2 id="auth-title">Welcome Back</h2>
-                <p id="auth-description">Login to continue managing events</p>
-            </div>
-
-            <form id="login-form" class="auth-form active">
-                <div class="form-group">
-                    <label for="login_email">Email</label>
-                    <input type="email" id="login_email" name="login_email" required>
-                </div>
-                <div class="form-group">
-                    <label for="login_password">Password</label>
-                    <input type="password" id="login_password" name="login_password" required>
-                </div>
-                <button type="submit" class="btn btn-primary full-width">Login</button>
-                <p class="auth-switch">
-                    Don't have an account?
-                    <button type="button" class="link-btn" data-switch="register">Register</button>
-                </p>
-            </form>
-
-            <form id="register-form" class="auth-form">
-                <div class="form-group">
-                    <label for="register_email">Email</label>
-                    <input type="email" id="register_email" name="register_email" required>
-                </div>
-                <div class="form-group">
-                    <label for="register_password">Password</label>
-                    <input type="password" id="register_password" name="register_password" required minlength="8" title="At least 8 characters with one special character">
-                    <small class="input-hint">Must be 8+ characters and include one special character.</small>
-                </div>
-                <div class="form-group">
-                    <label>Registering as</label>
-                    <div class="role-options">
-                        <label class="role-option">
-                            <input type="radio" name="register_role" value="user" checked>
-                            <span>User / Participant</span>
-                        </label>
-                        <label class="role-option">
-                            <input type="radio" name="register_role" value="admin">
-                            <span>Admin</span>
-                        </label>
-                    </div>
-                </div>
-                <button type="submit" class="btn btn-primary full-width">Create Account</button>
-                <p class="auth-switch">
-                    Already have an account?
-                    <button type="button" class="link-btn" data-switch="login">Login</button>
-                </p>
-            </form>
+      <div class="auth-card">
+        <div class="auth-card-header">
+          <h2 id="auth-title">Welcome Back</h2>
+          <p id="auth-description">Login to continue managing events</p>
         </div>
+
+        <!-- Login Form -->
+        <form id="login-form" class="auth-form active">
+          <div class="form-group">
+            <label for="login_email">Email</label>
+            <input type="email" id="login_email" name="login_email" required />
+          </div>
+          <div class="form-group">
+            <label for="login_password">Password</label>
+            <div class="password-input-wrapper">
+              <input
+                type="password"
+                id="login_password"
+                name="login_password"
+                required
+              />
+              <button
+                type="button"
+                class="eye-icon"
+                onclick="togglePasswordVisibility('login_password')"
+              ></button>
+            </div>
+          </div>
+          <button type="submit" class="btn btn-primary full-width">
+            Login
+          </button>
+          <p class="auth-switch">
+            Don't have an account?
+            <button type="button" class="link-btn" data-switch="register">
+              Register
+            </button>
+          </p>
+        </form>
+
+        <!-- Register Form -->
+        <form id="register-form" class="auth-form">
+          <div class="form-group">
+            <label for="register_email">Email</label>
+            <input
+              type="email"
+              id="register_email"
+              name="register_email"
+              required
+            />
+          </div>
+          <div class="form-group">
+            <label for="register_password">Password</label>
+            <div class="password-input-wrapper">
+              <input
+                type="password"
+                id="register_password"
+                name="register_password"
+                required
+                minlength="8"
+              />
+              <button
+                type="button"
+                class="eye-icon"
+                onclick="togglePasswordVisibility('register_password')"
+              ></button>
+            </div>
+            <small class="input-hint"
+              >Must be 8+ characters with letters, numbers, and special
+              characters.</small
+            >
+          </div>
+          <!-- Confirm password removed -->
+          <div class="form-group">
+            <label>Registering as</label>
+            <div class="role-options">
+              <label class="role-option">
+                <input type="radio" name="register_role" value="user" checked />
+                <span>User / Participant</span>
+              </label>
+              <label class="role-option">
+                <input type="radio" name="register_role" value="admin" />
+                <span>Admin</span>
+              </label>
+            </div>
+          </div>
+          <button type="submit" class="btn btn-primary full-width">
+            Create Account
+          </button>
+          <p class="auth-switch">
+            Already have an account?
+            <button type="button" class="link-btn" data-switch="login">
+              Login
+            </button>
+          </p>
+        </form>
+      </div>
     </div>
 
+    <!-- Header -->
     <header class="header">
-        <div class="container">
-            <h1 class="logo">🎉 EventHub</h1>
-            <nav class="nav">
-                <button class="nav-btn active" data-page="events">Events</button>
-                <button class="nav-btn" data-page="admin" id="admin-nav-btn">Admin</button>
-            </nav>
-            <div class="auth-info">
-                <div class="auth-user">
-                    <span id="auth-email">Guest</span>
-                    <span id="auth-role-pill" class="role-pill">-</span>
-                </div>
-                <button id="logout-btn" class="btn btn-secondary btn-sm" type="button">Logout</button>
-            </div>
+      <div class="container">
+        <h1 class="logo">EventHub</h1>
+        <nav class="nav">
+          <button class="nav-btn active" data-page="events">Events</button>
+          <button
+            class="nav-btn"
+            data-page="admin"
+            id="admin-nav-btn"
+            style="display: none"
+          >
+            Event Creation
+          </button>
+          <button
+            class="nav-btn"
+            data-page="admin-dashboard"
+            id="admin-dashboard-nav-btn"
+            style="display: none"
+          >
+            Dashboard
+          </button>
+        </nav>
+        <div class="auth-info">
+          <div class="auth-user">
+            <span id="auth-email">Guest</span>
+            <span id="auth-role-pill" class="role-pill">-</span>
+          </div>
+          <button
+            id="back-btn"
+            class="btn btn-secondary btn-sm"
+            type="button"
+            style="display: none; margin-right: 8px"
+          >
+            ← Back
+          </button>
+          <button
+            id="logout-btn"
+            class="btn btn-secondary btn-sm"
+            type="button"
+            style="display: none"
+          >
+            Logout
+          </button>
         </div>
+      </div>
     </header>
 
+    <!-- Main Content -->
     <main class="main">
-        <!-- Events Page -->
-        <section id="events-page" class="page active">
-            <div class="container">
-                <div class="page-header">
-                    <h2>Upcoming Events</h2>
-                    <p>Discover and register for exciting events</p>
-                </div>
-                
-                <div class="events-grid" id="events-grid">
-                    <div class="loading">Loading events...</div>
-                </div>
-            </div>
-        </section>
-
-        <!-- Admin Page -->
-        <section id="admin-page" class="page">
-            <div class="container">
-                <div class="page-header">
-                    <h2>Event Management</h2>
-                    <p>Create and manage events</p>
-                </div>
-
-                <div class="admin-container">
-                    <div class="admin-form-card">
-                        <h3>Create New Event</h3>
-                        <form id="event-form">
-                            <div class="form-group">
-                                <label for="event_id">Event ID *</label>
-                                <input type="text" id="event_id" name="event_id" required>
-                            </div>
-                            <div class="form-group">
-                                <label for="event_name">Event Name *</label>
-                                <input type="text" id="event_name" name="event_name" required>
-                            </div>
-                            <div class="form-group">
-                                <label for="description">Description</label>
-                                <textarea id="description" name="description" rows="3"></textarea>
-                            </div>
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label for="start_date">Start Date *</label>
-                                    <input type="date" id="start_date" name="start_date" required>
-                                </div>
-                                <div class="form-group">
-                                    <label for="end_date">End Date *</label>
-                                    <input type="date" id="end_date" name="end_date" required>
-                                </div>
-                            </div>
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label for="start_time">Start Time *</label>
-                                    <input type="time" id="start_time" name="start_time" required>
-                                </div>
-                                <div class="form-group">
-                                    <label for="end_time">End Time *</label>
-                                    <input type="time" id="end_time" name="end_time" required>
-                                </div>
-                            </div>
-                            <div class="form-group">
-                                <label for="venue">Venue</label>
-                                <input type="text" id="venue" name="venue">
-                            </div>
-                            <div class="form-group">
-                                <label for="max_participants">Max Participants</label>
-                                <input type="number" id="max_participants" name="max_participants" min="1">
-                            </div>
-                            <button type="submit" class="btn btn-primary">Create Event</button>
-                        </form>
-                    </div>
-
-                    <div class="admin-events-list">
-                        <h3>All Events</h3>
-                        <div id="admin-events-list"></div>
-                    </div>
-                </div>
-            </div>
-        </section>
-    </main>
-
-    <!-- Registration Modal -->
-    <div id="registration-modal" class="modal">
-        <div class="modal-content">
-            <span class="close">&times;</span>
-            <h2>Register for Event</h2>
-            <form id="registration-form">
-                <div class="form-group">
-                    <label for="reg_name">Full Name *</label>
-                    <input type="text" id="reg_name" name="reg_name" required>
-                </div>
-                <div class="form-group">
-                    <label for="reg_email">Email *</label>
-                    <input type="email" id="reg_email" name="reg_email" required readonly>
-                </div>
-                <div class="form-group">
-                    <label for="reg_phone">Phone Number</label>
-                    <input type="tel" id="reg_phone" name="reg_phone">
-                </div>
-                <button type="submit" class="btn btn-primary">Register</button>
-            </form>
+      <!-- Events Page (User) -->
+      <section id="events-page" class="page active" data-page-content="events">
+        <div class="container">
+          <div class="page-header">
+            <h2>Upcoming Events</h2>
+            <p>Discover and register for exciting events</p>
+          </div>
+          <div class="events-grid" id="events-grid">
+            <div class="loading">Loading events...</div>
+          </div>
         </div>
-    </div>
+      </section>
+
+      <!-- Admin Creation Page -->
+      <section id="admin-page" class="page" data-page-content="admin">
+        <div class="container">
+          <div class="page-header">
+            <h2>Create Event</h2>
+          </div>
+          <div class="form-card">
+            <form id="event-form">
+              <div class="form-group">
+                <label for="event-name">Event Name</label>
+                <input type="text" id="event-name" required />
+              </div>
+              <div class="form-group">
+                <label for="event-description">Description</label>
+                <textarea id="event-description" rows="4" required></textarea>
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="event-date">Event Date</label>
+                  <input type="date" id="event-date" required />
+                </div>
+                <div class="form-group">
+                  <label for="event-time">Event Time</label>
+                  <input type="time" id="event-time" required />
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="event-reg-deadline-date"
+                    >Registration Deadline Date</label
+                  >
+                  <input type="date" id="event-reg-deadline-date" required />
+                </div>
+                <div class="form-group">
+                  <label for="event-reg-deadline-time"
+                    >Registration Deadline Time</label
+                  >
+                  <input type="time" id="event-reg-deadline-time" required />
+                </div>
+              </div>
+              <div class="form-group">
+                <label for="event-location">Location</label>
+                <input type="text" id="event-location" required />
+              </div>
+              <div class="form-group">
+                <label for="event-max-registrations">Max Registrations</label>
+                <input
+                  type="number"
+                  id="event-max-registrations"
+                  value="100"
+                  min="1"
+                />
+              </div>
+              <button type="submit" class="btn btn-primary">
+                Create Event
+              </button>
+            </form>
+          </div>
+        </div>
+      </section>
+
+      <!-- Admin Dashboard Page -->
+      <section
+        id="admin-dashboard-page"
+        class="page"
+        data-page-content="admin-dashboard"
+      >
+        <div class="container">
+          <div class="page-header">
+            <h2>Event Management Dashboard</h2>
+          </div>
+          <div class="admin-events-grid" id="admin-events-grid">
+            <div class="loading">Loading events...</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Admin Event Details Page -->
+      <section
+        id="admin-event-details-page"
+        class="page"
+        data-page-content="admin-event-details"
+        style="display: none"
+      >
+        <div class="container">
+          <div class="page-header">
+            <h2>Event Details</h2>
+          </div>
+          <div id="admin-event-details-body"></div>
+        </div>
+      </section>
+
+      <!-- Event Details Page -->
+      <section
+        id="event-details-page"
+        class="page"
+        data-page-content="event-details"
+        style="display: none"
+      >
+        <div class="container">
+          <div class="page-header">
+            <h2 id="event-details-title">Event Details</h2>
+          </div>
+          <div id="event-details-body"></div>
+        </div>
+      </section>
+
+      <!-- Announcements Page -->
+      <section
+        id="announcements-page"
+        class="page"
+        data-page-content="announcements"
+        style="display: none"
+      >
+        <div class="container">
+          <div class="page-header">
+            <h2>Announcements</h2>
+          </div>
+          <div id="announcements-page-body"></div>
+        </div>
+      </section>
+
+      <!-- Queries Page -->
+      <section
+        id="queries-page"
+        class="page"
+        data-page-content="queries"
+        style="display: none"
+      >
+        <div class="container">
+          <div class="page-header">
+            <h2>Queries</h2>
+          </div>
+          <div id="queries-page-body"></div>
+        </div>
+      </section>
+
+      <!-- Admin Specific Pages: announcement management, query management, edit event -->
+      <section
+        id="admin-announcements-page"
+        class="page"
+        data-page-content="admin-announcements"
+        style="display: none"
+      >
+        <div class="container">
+          <div class="page-header">
+            <h2>Manage Announcements</h2>
+          </div>
+          <div id="admin-announcements-body"></div>
+        </div>
+      </section>
+
+      <section
+        id="admin-queries-page"
+        class="page"
+        data-page-content="admin-queries"
+        style="display: none"
+      >
+        <div class="container">
+          <div class="page-header">
+            <h2>Manage Queries</h2>
+          </div>
+          <div id="admin-queries-body"></div>
+        </div>
+      </section>
+
+      <section
+        id="admin-edit-event-page"
+        class="page"
+        data-page-content="admin-edit-event"
+        style="display: none"
+      >
+        <div class="container">
+          <div class="page-header">
+            <h2>Edit Event</h2>
+          </div>
+          <div id="admin-edit-event-body"></div>
+        </div>
+      </section>
+
+      <section
+        id="admin-registrations-page"
+        class="page"
+        data-page-content="admin-registrations"
+        style="display: none"
+      >
+        <div class="container">
+          <div class="page-header">
+            <h2>Event Registrations</h2>
+          </div>
+          <div id="admin-registrations-body"></div>
+        </div>
+      </section>
+    </main>
 
     <!-- Event Details Modal -->
     <div id="event-details-modal" class="modal">
-        <div class="modal-content">
-            <span class="close">&times;</span>
-            <div id="event-details-content"></div>
-        </div>
+      <div class="modal-content">
+        <button class="modal-close"></button>
+        <div id="event-details-content"></div>
+      </div>
     </div>
 
-    <!-- Notification Toast -->
-    <div id="toast" class="toast"></div>
+    <!-- Registration Modal -->
+    <div id="registration-modal" class="modal">
+      <div class="modal-content">
+        <button class="modal-close"></button>
+        <h2>Register for Event</h2>
+        <form id="registration-form">
+          <div class="form-group">
+            <label for="registration-name">Full Name</label>
+            <input type="text" id="registration-name" required />
+          </div>
+          <div class="form-group">
+            <label for="registration-email">Email</label>
+            <input type="email" id="registration-email" required />
+          </div>
+          <div class="form-group">
+            <label for="registration-phone">Phone</label>
+            <input type="tel" id="registration-phone" required />
+          </div>
+          <button type="submit" class="btn btn-primary">Register</button>
+        </form>
+      </div>
+    </div>
 
-    <!-- Core Modules (modular architecture) -->
-    <script src="/ui.js"></script>
-    <script src="/auth.js"></script>
+    <!-- Announcements Modal -->
+    <div id="announcements-modal" class="modal">
+      <div class="modal-content">
+        <button class="modal-close"></button>
+        <div id="announcements-content"></div>
+      </div>
+    </div>
+
+    <!-- Queries Modal -->
+    <div id="queries-modal" class="modal">
+      <div class="modal-content">
+        <button class="modal-close"></button>
+        <div id="queries-content"></div>
+      </div>
+    </div>
+
+    <!-- Admin Announcements Modal -->
+    <div id="admin-announcements-modal" class="modal">
+      <div class="modal-content">
+        <button class="modal-close"></button>
+        <div id="admin-announcements-content"></div>
+      </div>
+    </div>
+
+    <!-- Admin Queries Modal -->
+    <div id="admin-queries-modal" class="modal">
+      <div class="modal-content">
+        <button class="modal-close"></button>
+        <div id="admin-queries-content"></div>
+      </div>
+    </div>
+
+    <!-- Admin Event Details Modal -->
+    <div id="admin-event-details-modal" class="modal">
+      <div class="modal-content">
+        <button class="modal-close"></button>
+        <div id="admin-event-details-content"></div>
+      </div>
+    </div>
+
+    <!-- Registrations Modal -->
+    <div id="registrations-modal" class="modal">
+      <div class="modal-content">
+        <button class="modal-close"></button>
+        <div id="registrations-content"></div>
+      </div>
+    </div>
+
     <script src="/app.js"></script>
-</body>
+    <script src="/script.js"></script>
+    <script src="/tasks.js"></script>
+  </body>
 </html>

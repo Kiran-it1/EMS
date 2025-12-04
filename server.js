@@ -47,10 +47,37 @@ function initializeDatabase() {
       end_time TEXT NOT NULL,
       venue TEXT,
       max_participants INTEGER,
+      registration_deadline_date TEXT,
+      registration_deadline_time TEXT,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )`,
     (err) => {
       if (err) console.error("Error creating events table:", err.message);
+    }
+  );
+
+  // Ensure registration deadline columns exist on older databases
+  db.run(
+    `ALTER TABLE events ADD COLUMN registration_deadline_date TEXT`,
+    (err) => {
+      if (err && !String(err.message).includes("duplicate column")) {
+        console.error(
+          "Error adding registration_deadline_date column:",
+          err.message
+        );
+      }
+    }
+  );
+
+  db.run(
+    `ALTER TABLE events ADD COLUMN registration_deadline_time TEXT`,
+    (err) => {
+      if (err && !String(err.message).includes("duplicate column")) {
+        console.error(
+          "Error adding registration_deadline_time column:",
+          err.message
+        );
+      }
     }
   );
 
@@ -66,7 +93,8 @@ function initializeDatabase() {
       FOREIGN KEY (event_id) REFERENCES events(event_id)
     )`,
     (err) => {
-      if (err) console.error("Error creating registrations table:", err.message);
+      if (err)
+        console.error("Error creating registrations table:", err.message);
     }
   );
 
@@ -83,9 +111,44 @@ function initializeDatabase() {
       if (err) console.error("Error creating users table:", err.message);
     }
   );
+
+  // Announcements table
+  db.run(
+    `CREATE TABLE IF NOT EXISTS announcements (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      event_id TEXT NOT NULL,
+      admin_id INTEGER NOT NULL,
+      message TEXT NOT NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (event_id) REFERENCES events(event_id),
+      FOREIGN KEY (admin_id) REFERENCES users(id)
+    )`,
+    (err) => {
+      if (err)
+        console.error("Error creating announcements table:", err.message);
+    }
+  );
+
+  // Queries table
+  db.run(
+    `CREATE TABLE IF NOT EXISTS queries (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      event_id TEXT NOT NULL,
+      user_id INTEGER NOT NULL,
+      user_name TEXT NOT NULL,
+      message TEXT NOT NULL,
+      admin_reply TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (event_id) REFERENCES events(event_id),
+      FOREIGN KEY (user_id) REFERENCES users(id)
+    )`,
+    (err) => {
+      if (err) console.error("Error creating queries table:", err.message);
+    }
+  );
 }
 
-// ----------------- Auth Helpers -----------------
+// ============ AUTH HELPERS ============
 
 function generateToken(user) {
   return jwt.sign(
@@ -125,9 +188,15 @@ function isStrongPassword(password) {
   );
 }
 
-// ----------------- Check Overlap -----------------
+// ============ CHECK OVERLAP ============
 
-function checkTimeOverlap(newStartDate, newEndDate, newStartTime, newEndTime, excludeEventId = null) {
+function checkTimeOverlap(
+  newStartDate,
+  newEndDate,
+  newStartTime,
+  newEndTime,
+  excludeEventId = null
+) {
   return new Promise((resolve, reject) => {
     let query = `SELECT * FROM events`;
     const params = [];
@@ -144,7 +213,9 @@ function checkTimeOverlap(newStartDate, newEndDate, newStartTime, newEndTime, ex
       const newEnd = new Date(newEndDate + "T" + newEndTime);
 
       for (const event of existingEvents) {
-        const existingStart = new Date(event.start_date + "T" + event.start_time);
+        const existingStart = new Date(
+          event.start_date + "T" + event.start_time
+        );
         const existingEnd = new Date(event.end_date + "T" + event.end_time);
 
         if (newStart < existingEnd && newEnd > existingStart) {
@@ -157,14 +228,16 @@ function checkTimeOverlap(newStartDate, newEndDate, newStartTime, newEndTime, ex
   });
 }
 
-// ----------------- AUTH ROUTES -----------------
+// ============ AUTH ROUTES ============
 
 app.post("/api/auth/register", async (req, res) => {
   try {
     const { email, password, role } = req.body;
 
     if (!email || !password || !role)
-      return res.status(400).json({ error: "Email, password, and role are required" });
+      return res
+        .status(400)
+        .json({ error: "Email, password, and role are required" });
 
     const normalizedRole = role === "participant" ? "user" : role;
 
@@ -173,7 +246,8 @@ app.post("/api/auth/register", async (req, res) => {
 
     if (!isStrongPassword(password))
       return res.status(400).json({
-        error: "Password must be at least 8 characters and include one special character",
+        error:
+          "Password must be at least 8 characters and include one special character",
       });
 
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -202,34 +276,42 @@ app.post("/api/auth/login", (req, res) => {
   if (!email || !password)
     return res.status(400).json({ error: "Email and password are required" });
 
-  db.get("SELECT * FROM users WHERE email = ?", [email.toLowerCase()], async (err, user) => {
-    if (err) return res.status(500).json({ error: err.message });
-    if (!user) return res.status(401).json({ error: "Invalid credentials" });
+  db.get(
+    "SELECT * FROM users WHERE email = ?",
+    [email.toLowerCase()],
+    async (err, user) => {
+      if (err) return res.status(500).json({ error: err.message });
+      if (!user) return res.status(401).json({ error: "Invalid credentials" });
 
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) return res.status(401).json({ error: "Invalid credentials" });
+      const isMatch = await bcrypt.compare(password, user.password);
+      if (!isMatch)
+        return res.status(401).json({ error: "Invalid credentials" });
 
-    const token = generateToken(user);
+      const token = generateToken(user);
 
-    res.json({
-      token,
-      user: { id: user.id, email: user.email, role: user.role },
-    });
-  });
+      res.json({
+        token,
+        user: { id: user.id, email: user.email, role: user.role },
+      });
+    }
+  );
 });
 
 app.get("/api/auth/me", authenticateToken, (req, res) => {
   res.json({ user: req.user });
 });
 
-// ----------------- EVENT ROUTES -----------------
+// ============ EVENT ROUTES ============
 
 // Get all events
 app.get("/api/events", (req, res) => {
-  db.all("SELECT * FROM events ORDER BY start_date, start_time", (err, rows) => {
-    if (err) return res.status(500).json({ error: err.message });
-    res.json(rows);
-  });
+  db.all(
+    "SELECT * FROM events ORDER BY start_date, start_time",
+    (err, rows) => {
+      if (err) return res.status(500).json({ error: err.message });
+      res.json(rows);
+    }
+  );
 });
 
 // Get single event
@@ -257,26 +339,44 @@ app.post("/api/events", authenticateToken, requireAdmin, async (req, res) => {
     end_time,
     venue,
     max_participants,
+    registration_deadline_date,
+    registration_deadline_time,
   } = req.body;
 
-  if (!event_id || !event_name || !start_date || !end_date || !start_time || !end_time)
+  if (
+    !event_id ||
+    !event_name ||
+    !start_date ||
+    !end_date ||
+    !start_time ||
+    !end_time
+  )
     return res.status(400).json({ error: "Missing required fields" });
 
   const start = new Date(start_date + "T" + start_time);
   const end = new Date(end_date + "T" + end_time);
 
   if (start >= end)
-    return res.status(400).json({ error: "Start date/time must be before end date/time" });
+    return res
+      .status(400)
+      .json({ error: "Start date/time must be before end date/time" });
 
   try {
-    const overlap = await checkTimeOverlap(start_date, end_date, start_time, end_time);
+    const overlap = await checkTimeOverlap(
+      start_date,
+      end_date,
+      start_time,
+      end_time
+    );
 
     if (overlap)
-      return res.status(400).json({ error: "Event time overlaps with existing event" });
+      return res
+        .status(400)
+        .json({ error: "Event time overlaps with existing event" });
 
     db.run(
-      `INSERT INTO events (event_id, event_name, description, start_date, end_date, start_time, end_time, venue, max_participants)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO events (event_id, event_name, description, start_date, end_date, start_time, end_time, venue, max_participants, registration_deadline_date, registration_deadline_time)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         event_id,
         event_name,
@@ -287,6 +387,8 @@ app.post("/api/events", authenticateToken, requireAdmin, async (req, res) => {
         end_time,
         venue,
         max_participants,
+        registration_deadline_date,
+        registration_deadline_time,
       ],
       function (err) {
         if (err) {
@@ -304,90 +406,130 @@ app.post("/api/events", authenticateToken, requireAdmin, async (req, res) => {
   }
 });
 
-// ----------------- UPDATE EVENT -----------------
+// ============ UPDATE EVENT ============
 
-app.put("/api/events/:eventId", authenticateToken, requireAdmin, async (req, res) => {
-  const eventId = req.params.eventId;
-  const {
-    event_name,
-    description,
-    start_date,
-    end_date,
-    start_time,
-    end_time,
-    venue,
-    max_participants,
-  } = req.body;
+app.put(
+  "/api/events/:eventId",
+  authenticateToken,
+  requireAdmin,
+  async (req, res) => {
+    const eventId = req.params.eventId;
+    const {
+      event_name,
+      description,
+      start_date,
+      end_date,
+      start_time,
+      end_time,
+      venue,
+      max_participants,
+      registration_deadline_date,
+      registration_deadline_time,
+    } = req.body;
 
-  const start = new Date(start_date + "T" + start_time);
-  const end = new Date(end_date + "T" + end_time);
+    const start = new Date(start_date + "T" + start_time);
+    const end = new Date(end_date + "T" + end_time);
 
-  if (start >= end)
-    return res.status(400).json({ error: "Start date/time must be before end date/time" });
+    if (start >= end)
+      return res
+        .status(400)
+        .json({ error: "Start date/time must be before end date/time" });
 
-  try {
-    const overlap = await checkTimeOverlap(start_date, end_date, start_time, end_time, eventId);
-
-    if (overlap)
-      return res.status(400).json({ error: "Event time overlaps with existing event" });
-
-    db.run(
-      `UPDATE events 
-       SET event_name = ?, description = ?, start_date = ?, end_date = ?, start_time = ?, end_time = ?, venue = ?, max_participants = ? 
-       WHERE event_id = ?`,
-      [
-        event_name,
-        description,
+    try {
+      const overlap = await checkTimeOverlap(
         start_date,
         end_date,
         start_time,
         end_time,
-        venue,
-        max_participants,
-        eventId,
-      ],
+        eventId
+      );
+
+      if (overlap)
+        return res
+          .status(400)
+          .json({ error: "Event time overlaps with existing event" });
+
+      db.run(
+        `UPDATE events 
+       SET event_name = ?, description = ?, start_date = ?, end_date = ?, start_time = ?, end_time = ?, venue = ?, max_participants = ?, registration_deadline_date = ?, registration_deadline_time = ? 
+       WHERE event_id = ?`,
+        [
+          event_name,
+          description,
+          start_date,
+          end_date,
+          start_time,
+          end_time,
+          venue,
+          max_participants,
+          registration_deadline_date,
+          registration_deadline_time,
+          eventId,
+        ],
+        function (err) {
+          if (err) return res.status(500).json({ error: err.message });
+          if (this.changes === 0)
+            return res.status(404).json({ error: "Event not found" });
+
+          res.json({ message: "Event updated successfully" });
+        }
+      );
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  }
+);
+
+// ============ DELETE EVENT ============
+
+app.delete(
+  "/api/events/:eventId",
+  authenticateToken,
+  requireAdmin,
+  (req, res) => {
+    db.run(
+      "DELETE FROM events WHERE event_id = ?",
+      [req.params.eventId],
       function (err) {
         if (err) return res.status(500).json({ error: err.message });
-        if (this.changes === 0) return res.status(404).json({ error: "Event not found" });
+        if (this.changes === 0)
+          return res.status(404).json({ error: "Event not found" });
 
-        res.json({ message: "Event updated successfully" });
+        res.json({ message: "Event deleted successfully" });
       }
     );
-  } catch (error) {
-    res.status(500).json({ error: error.message });
   }
-});
+);
 
-// ----------------- DELETE EVENT -----------------
-
-app.delete("/api/events/:eventId", authenticateToken, requireAdmin, (req, res) => {
-  db.run(
-    "DELETE FROM events WHERE event_id = ?",
-    [req.params.eventId],
-    function (err) {
-      if (err) return res.status(500).json({ error: err.message });
-      if (this.changes === 0) return res.status(404).json({ error: "Event not found" });
-
-      res.json({ message: "Event deleted successfully" });
-    }
-  );
-});
-
-// ----------------- USER REGISTRATION ROUTE -----------------
+// ============ USER REGISTRATION ROUTE ============
 
 app.post("/api/events/:eventId/register", authenticateToken, (req, res) => {
   const eventId = req.params.eventId;
   const { user_name, user_phone } = req.body;
 
-  if (!user_name)
-    return res.status(400).json({ error: "Name is required" });
+  if (!user_name) return res.status(400).json({ error: "Name is required" });
 
   if (req.user.role !== "user")
-    return res.status(403).json({ error: "Only users can register for events" });
+    return res
+      .status(403)
+      .json({ error: "Only users can register for events" });
 
   db.get("SELECT * FROM events WHERE event_id = ?", [eventId], (err, event) => {
     if (err) return res.status(500).json({ error: err.message });
     if (!event) return res.status(404).json({ error: "Event not found" });
+
+    // Enforce registration deadline on the backend as well
+    if (event.registration_deadline_date && event.registration_deadline_time) {
+      const deadline = new Date(
+        `${event.registration_deadline_date}T${event.registration_deadline_time}`
+      );
+      const now = new Date();
+      if (now > deadline) {
+        return res
+          .status(400)
+          .json({ error: "Registration deadline has passed" });
+      }
+    }
 
     db.get(
       "SELECT * FROM registrations WHERE event_id = ? AND user_email = ?",
@@ -395,7 +537,9 @@ app.post("/api/events/:eventId/register", authenticateToken, (req, res) => {
       (err, existing) => {
         if (err) return res.status(500).json({ error: err.message });
         if (existing)
-          return res.status(400).json({ error: "You are already registered for this event" });
+          return res
+            .status(400)
+            .json({ error: "You are already registered for this event" });
 
         if (event.max_participants) {
           db.get(
@@ -412,7 +556,10 @@ app.post("/api/events/:eventId/register", authenticateToken, (req, res) => {
                 [eventId, user_name, req.user.email, user_phone],
                 function (err) {
                   if (err) return res.status(500).json({ error: err.message });
-                  res.json({ id: this.lastID, message: "Registration successful" });
+                  res.json({
+                    id: this.lastID,
+                    message: "Registration successful",
+                  });
                 }
               );
             }
@@ -432,7 +579,7 @@ app.post("/api/events/:eventId/register", authenticateToken, (req, res) => {
   });
 });
 
-// ----------------- REGISTRATION VIEWS -----------------
+// ============ REGISTRATION VIEWS ============
 
 app.get(
   "/api/events/:eventId/registrations",
@@ -461,7 +608,138 @@ app.get("/api/events/:eventId/registrations/count", (req, res) => {
   );
 });
 
-// ----------------- SERVE FRONTEND -----------------
+// ============ ANNOUNCEMENTS ROUTES ============
+
+// Get announcements for an event
+app.get("/api/events/:eventId/announcements", (req, res) => {
+  const { eventId } = req.params;
+  db.all(
+    "SELECT id, message, created_at FROM announcements WHERE event_id = ? ORDER BY created_at DESC",
+    [eventId],
+    (err, rows) => {
+      if (err) {
+        return res.status(500).json({ error: "Database error" });
+      }
+      res.json(rows || []);
+    }
+  );
+});
+
+// Post announcement (admin only)
+app.post(
+  "/api/events/:eventId/announcements",
+  authenticateToken,
+  (req, res) => {
+    const { eventId } = req.params;
+    const { message } = req.body;
+
+    if (req.user.role !== "admin") {
+      return res
+        .status(403)
+        .json({ error: "Only admins can post announcements" });
+    }
+
+    if (!message) {
+      return res.status(400).json({ error: "Message required" });
+    }
+
+    db.run(
+      "INSERT INTO announcements (event_id, admin_id, message) VALUES (?, ?, ?)",
+      [eventId, req.user.id, message],
+      function (err) {
+        if (err) {
+          return res.status(500).json({ error: "Failed to post announcement" });
+        }
+        res.json({ success: true, id: this.lastID });
+      }
+    );
+  }
+);
+
+// ============ QUERIES ROUTES ============
+
+// Get queries for an event (user's own queries)
+app.get("/api/events/:eventId/queries", authenticateToken, (req, res) => {
+  const { eventId } = req.params;
+  db.all(
+    "SELECT id, user_id, message, admin_reply, created_at FROM queries WHERE event_id = ? AND user_id = ? ORDER BY created_at DESC",
+    [eventId, req.user.id],
+    (err, rows) => {
+      if (err) {
+        return res.status(500).json({ error: "Database error" });
+      }
+      res.json(rows || []);
+    }
+  );
+});
+
+// Submit a query
+app.post("/api/events/:eventId/queries", authenticateToken, (req, res) => {
+  const { eventId } = req.params;
+  const { message } = req.body;
+
+  if (!message) {
+    return res.status(400).json({ error: "Message required" });
+  }
+
+  db.run(
+    "INSERT INTO queries (event_id, user_id, user_name, message) VALUES (?, ?, ?, ?)",
+    [eventId, req.user.id, req.user.email, message],
+    function (err) {
+      if (err) {
+        return res.status(500).json({ error: "Failed to submit query" });
+      }
+      res.json({ success: true, id: this.lastID });
+    }
+  );
+});
+
+// Get all queries for an event (admin)
+app.get("/api/events/:eventId/admin-queries", authenticateToken, (req, res) => {
+  const { eventId } = req.params;
+
+  if (req.user.role !== "admin") {
+    return res.status(403).json({ error: "Only admins can view all queries" });
+  }
+
+  db.all(
+    "SELECT q.id, q.user_id, u.email as user_name, q.message, q.admin_reply, q.created_at FROM queries q LEFT JOIN users u ON q.user_id = u.id WHERE q.event_id = ? ORDER BY q.created_at DESC",
+    [eventId],
+    (err, rows) => {
+      if (err) {
+        return res.status(500).json({ error: "Database error" });
+      }
+      res.json(rows || []);
+    }
+  );
+});
+
+// Reply to query (admin only)
+app.post("/api/queries/:queryId/reply", authenticateToken, (req, res) => {
+  const { queryId } = req.params;
+  const { reply } = req.body;
+
+  if (req.user.role !== "admin") {
+    return res.status(403).json({ error: "Only admins can reply to queries" });
+  }
+
+  if (!reply) {
+    return res.status(400).json({ error: "Reply required" });
+  }
+
+  db.run(
+    "UPDATE queries SET admin_reply = ? WHERE id = ?",
+    [reply, queryId],
+    function (err) {
+      if (err) {
+        return res.status(500).json({ error: "Failed to submit reply" });
+      }
+      res.json({ success: true });
+    }
+  );
+});
+
+// ============ SERVE FRONTEND ============
 
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "pages", "public", "index.html"));
@@ -472,13 +750,13 @@ app.get("*", (req, res) => {
   res.sendFile(path.join(__dirname, "pages", "public", "index.html"));
 });
 
-// ----------------- START SERVER -----------------
+// ============ START SERVER ============
 
 app.listen(PORT, () => {
   console.log(`Server is running on http://localhost:${PORT}`);
 });
 
-// ----------------- GRACEFUL SHUTDOWN -----------------
+// ============ GRACEFUL SHUTDOWN ============
 
 process.on("SIGINT", () => {
   db.close((err) => {
