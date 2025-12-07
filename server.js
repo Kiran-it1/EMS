@@ -12,6 +12,8 @@ const JWT_SECRET = process.env.JWT_SECRET || "change-this-secret";
 const TOKEN_EXPIRY = process.env.JWT_EXPIRY || "1d";
 const PASSWORD_MIN_LENGTH = 8;
 const PASSWORD_SPECIAL_REGEX = /[!@#$%^&*()_\-+=[\]{};':"\\|,.<>/?]/;
+// Enforce college email format: 2-u####@students.git.edu
+const COLLEGE_EMAIL_REGEX = /^2-u\d{4}@students\.git\.edu$/i;
 
 // Middleware
 app.use(cors());
@@ -239,6 +241,12 @@ app.post("/api/auth/register", async (req, res) => {
         .status(400)
         .json({ error: "Email, password, and role are required" });
 
+      // Enforce college email for registration
+      if (!COLLEGE_EMAIL_REGEX.test(email))
+        return res
+          .status(400)
+          .json({ error: "Please register using your college id (e.g. 2-u1234@students.git.edu)" });
+
     const normalizedRole = role === "participant" ? "user" : role;
 
     if (!["user", "admin"].includes(normalizedRole))
@@ -275,6 +283,10 @@ app.post("/api/auth/login", (req, res) => {
 
   if (!email || !password)
     return res.status(400).json({ error: "Email and password are required" });
+
+  // Enforce college email for login
+  if (!COLLEGE_EMAIL_REGEX.test(email))
+    return res.status(400).json({ error: "Please login through your college id (e.g. 2-u1234@students.git.edu)" });
 
   db.get(
     "SELECT * FROM users WHERE email = ?",

@@ -8,6 +8,9 @@ let events = [];
 let pageStack = [];
 let currentPage = "events";
 
+// College email enforcement: format `2-u####@students.git.edu` (#### are digits)
+const COLLEGE_EMAIL_REGEX = /^2-u\d{4}@students\.git\.edu$/i;
+
 // Password visibility toggle
 function togglePasswordVisibility(inputId) {
   const input = document.getElementById(inputId);
@@ -83,10 +86,17 @@ function attachAuthListeners() {
 async function handleLoginSubmit(event) {
   event.preventDefault();
   const formData = new FormData(event.target);
+  const email = formData.get("login_email").trim();
   const payload = {
-    email: formData.get("login_email").trim(),
+    email,
     password: formData.get("login_password"),
   };
+
+  // Enforce college email format on login
+  if (!COLLEGE_EMAIL_REGEX.test(email)) {
+    alert("Please login through your college id (e.g. 2-u1234@students.git.edu)");
+    return;
+  }
 
   try {
     const response = await fetch(`${API_BASE}/auth/login`, {
@@ -141,6 +151,12 @@ async function handleRegisterSubmit(event) {
     password: password,
     role,
   };
+
+  // Enforce college email format on registration
+  if (!COLLEGE_EMAIL_REGEX.test(payload.email)) {
+    alert("Please register using your college id (e.g. 2-u1234@students.git.edu)");
+    return;
+  }
 
   try {
     const response = await fetch(`${API_BASE}/auth/register`, {
